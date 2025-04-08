@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/gdamore/tcell/v2"
-	"code.rocketnine.space/tslocum/cbind"
+	"codeberg.org/tslocum/cbind"
 )
 
 func main() {
