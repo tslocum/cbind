@@ -23,18 +23,13 @@ func TestConfiguration(t *testing.T) {
 		wg[i].Add(pressTimes)
 
 		i := i // Capture
-		if c.key != tcell.KeyRune {
-			config.SetKey(c.mod, c.key, func(ev *tcell.EventKey) *tcell.EventKey {
-				wg[i].Done()
-				return nil
-			})
-		} else {
-			config.SetRune(c.mod, c.ch, func(ev *tcell.EventKey) *tcell.EventKey {
-				wg[i].Done()
-				return nil
-			})
+		err := config.Set(c.encoded, func(ev *tcell.EventKey) *tcell.EventKey {
+			wg[i].Done()
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("failed to set keybind for %s: %s", c.encoded, err)
 		}
-
 	}
 
 	done := make(chan struct{})
@@ -53,18 +48,6 @@ func TestConfiguration(t *testing.T) {
 		for i, c := range testCases {
 			i, c := i, c // Capture
 			go func() {
-				k := tcell.NewEventKey(c.key, c.ch, c.mod)
-				if k.Key() != c.key {
-					errs <- fmt.Errorf("failed to test capturing keybinds: tcell modified EventKey.Key: expected %d, got %d", c.key, k.Key())
-					return
-				} else if k.Rune() != c.ch {
-					errs <- fmt.Errorf("failed to test capturing keybinds: tcell modified EventKey.Rune: expected %d, got %d", c.ch, k.Rune())
-					return
-				} else if k.Modifiers() != c.mod {
-					errs <- fmt.Errorf("failed to test capturing keybinds: tcell modified EventKey.Modifiers: expected %d, got %d", c.mod, k.Modifiers())
-					return
-				}
-
 				ev := config.Capture(tcell.NewEventKey(c.key, c.ch, c.mod))
 				if ev != nil {
 					errs <- fmt.Errorf("failed to test capturing keybinds: failed to register case %d event %d %d %d", i, c.mod, c.key, c.ch)

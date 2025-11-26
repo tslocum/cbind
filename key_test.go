@@ -27,11 +27,12 @@ var testCases = []testCase{
 	{mod: tcell.ModAlt, key: tcell.KeyRune, ch: '1', encoded: "Alt+1"},
 	{mod: tcell.ModAlt, key: tcell.KeyTab, ch: rune(tcell.KeyTab), encoded: "Alt+Tab"},
 	{mod: tcell.ModAlt, key: tcell.KeyEnter, ch: rune(tcell.KeyEnter), encoded: "Alt+Enter"},
-	{mod: tcell.ModAlt, key: tcell.KeyBackspace2, ch: rune(tcell.KeyBackspace2), encoded: "Alt+Backspace"},
-	{mod: tcell.ModCtrl, key: tcell.KeyCtrlC, ch: rune(tcell.KeyCtrlC), encoded: "Ctrl+C"},
-	{mod: tcell.ModCtrl, key: tcell.KeyCtrlD, ch: rune(tcell.KeyCtrlD), encoded: "Ctrl+D"},
-	{mod: tcell.ModCtrl, key: tcell.KeyCtrlSpace, ch: rune(tcell.KeyCtrlSpace), encoded: "Ctrl+Space"},
-	{mod: tcell.ModCtrl, key: tcell.KeyCtrlRightSq, ch: rune(tcell.KeyCtrlRightSq), encoded: "Ctrl+]"},
+	{mod: tcell.ModAlt, key: tcell.KeyDelete, ch: 0, encoded: "Alt+Delete"},
+	{mod: tcell.ModCtrl, key: tcell.KeyRune, ch: 'c', encoded: "Ctrl+c"},
+	{mod: tcell.ModCtrl, key: tcell.KeyRune, ch: 'd', encoded: "Ctrl+d"},
+	{mod: tcell.ModCtrl, key: tcell.KeyRune, ch: ' ', encoded: "Ctrl+Space"},
+	// The test for tcell.KeyCtrlRightSq has been avoided due to a problem with tcell (#853).
+	//{mod: tcell.ModCtrl, key: tcell.KeyCtrlRightSq, ch: rune(tcell.KeyCtrlRightSq), encoded: "Ctrl+]"},
 	{mod: tcell.ModCtrl | tcell.ModAlt, key: tcell.KeyRune, ch: '+', encoded: "Ctrl+Alt++"},
 	{mod: tcell.ModCtrl | tcell.ModShift, key: tcell.KeyRune, ch: '+', encoded: "Ctrl+Shift++"},
 }

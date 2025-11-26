@@ -140,16 +140,9 @@ DECODEPIECE:
 		ch = rune(piece[0])
 	}
 
-	if mod&tcell.ModCtrl != 0 {
-		k, ok := ctrlKeys[unicode.ToLower(ch)]
-		if ok {
-			key = k
-			if UnifyEnterKeys && key == ctrlKeys['j'] {
-				key = tcell.KeyEnter
-			} else if key < 0x80 {
-				ch = rune(key)
-			}
-		}
+	// Normalize Ctrl+A-Z to lowercase
+	if mod&tcell.ModCtrl != 0 && key == tcell.KeyRune {
+		ch = unicode.ToLower(ch)
 	}
 
 	return mod, key, ch, nil
@@ -164,6 +157,11 @@ func Encode(mod tcell.ModMask, key tcell.Key, ch rune) (string, error) {
 		if key == tcell.KeyBackspace || key == tcell.KeyTab || key == tcell.KeyEnter {
 			mod ^= tcell.ModCtrl
 		} else {
+			if key >= tcell.KeyCtrlA && key <= tcell.KeyCtrlZ {
+				mod |= tcell.ModCtrl
+				ch = rune('a' + (key - tcell.KeyCtrlA))
+				key = tcell.KeyRune
+			}
 			for _, ctrlKey := range ctrlKeys {
 				if key == ctrlKey {
 					mod ^= tcell.ModCtrl
