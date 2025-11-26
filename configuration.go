@@ -3,7 +3,6 @@ package cbind
 import (
 	"fmt"
 	"sync"
-	"unicode"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -51,15 +50,6 @@ func (c *Configuration) SetKey(mod tcell.ModMask, key tcell.Key, handler func(ev
 		key = tcell.KeyBacktab
 	}
 
-	if mod&tcell.ModCtrl == 0 && key != tcell.KeyBackspace && key != tcell.KeyTab && key != tcell.KeyEnter {
-		for _, ctrlKey := range ctrlKeys {
-			if key == ctrlKey {
-				mod |= tcell.ModCtrl
-				break
-			}
-		}
-	}
-
 	c.handlers[fmt.Sprintf("%d-%d", mod, key)] = handler
 }
 
@@ -74,14 +64,6 @@ func (c *Configuration) SetRune(mod tcell.ModMask, ch rune, handler func(ev *tce
 	case '\n':
 		c.SetKey(mod, tcell.KeyEnter, handler)
 		return
-	}
-
-	if mod&tcell.ModCtrl != 0 {
-		k, ok := ctrlKeys[unicode.ToLower(ch)]
-		if ok {
-			c.SetKey(mod, k, handler)
-			return
-		}
 	}
 
 	c.mutex.Lock()
@@ -99,11 +81,24 @@ func (c *Configuration) Capture(ev *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
+	mod := ev.Modifiers()
+	key := ev.Key()
+	ch := ev.Rune()
+
+	if key != tcell.KeyRune && key != tcell.KeyBackspace && key != tcell.KeyTab && key != tcell.KeyEnter && key != tcell.KeyEscape {
+		// Convert KeyCtrlA-Z to rune format, but skip special keys first
+		if key >= tcell.KeyCtrlA && key <= tcell.KeyCtrlZ {
+			mod |= tcell.ModCtrl
+			ch = rune('a' + (key - tcell.KeyCtrlA))
+			key = tcell.KeyRune
+		}
+	}
+
 	var keyName string
-	if ev.Key() != tcell.KeyRune {
-		keyName = fmt.Sprintf("%d-%d", ev.Modifiers(), ev.Key())
+	if key != tcell.KeyRune {
+		keyName = fmt.Sprintf("%d-%d", mod, key)
 	} else {
-		keyName = fmt.Sprintf("%d:%d", ev.Modifiers(), ev.Rune())
+		keyName = fmt.Sprintf("%d:%d", mod, ch)
 	}
 
 	handler := c.handlers[keyName]
