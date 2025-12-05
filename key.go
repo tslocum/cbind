@@ -3,9 +3,8 @@ package cbind
 import (
 	"errors"
 	"strings"
-	"unicode"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 // Modifier labels
@@ -31,55 +30,21 @@ var fullKeyNames = map[string]string{
 	"esc":        "Escape",
 }
 
-var ctrlKeys = map[rune]tcell.Key{
-	' ':  tcell.KeyCtrlSpace,
-	'a':  tcell.KeyCtrlA,
-	'b':  tcell.KeyCtrlB,
-	'c':  tcell.KeyCtrlC,
-	'd':  tcell.KeyCtrlD,
-	'e':  tcell.KeyCtrlE,
-	'f':  tcell.KeyCtrlF,
-	'g':  tcell.KeyCtrlG,
-	'h':  tcell.KeyCtrlH,
-	'i':  tcell.KeyCtrlI,
-	'j':  tcell.KeyCtrlJ,
-	'k':  tcell.KeyCtrlK,
-	'l':  tcell.KeyCtrlL,
-	'm':  tcell.KeyCtrlM,
-	'n':  tcell.KeyCtrlN,
-	'o':  tcell.KeyCtrlO,
-	'p':  tcell.KeyCtrlP,
-	'q':  tcell.KeyCtrlQ,
-	'r':  tcell.KeyCtrlR,
-	's':  tcell.KeyCtrlS,
-	't':  tcell.KeyCtrlT,
-	'u':  tcell.KeyCtrlU,
-	'v':  tcell.KeyCtrlV,
-	'w':  tcell.KeyCtrlW,
-	'x':  tcell.KeyCtrlX,
-	'y':  tcell.KeyCtrlY,
-	'z':  tcell.KeyCtrlZ,
-	'\\': tcell.KeyCtrlBackslash,
-	']':  tcell.KeyCtrlRightSq,
-	'^':  tcell.KeyCtrlCarat,
-	'_':  tcell.KeyCtrlUnderscore,
-}
-
 // Decode decodes a string as a key or combination of keys.
-func Decode(s string) (mod tcell.ModMask, key tcell.Key, ch rune, err error) {
+func Decode(s string) (mod tcell.ModMask, key tcell.Key, str string, err error) {
 	if len(s) == 0 {
-		return 0, 0, 0, ErrInvalidKeyEvent
+		return 0, 0, "", ErrInvalidKeyEvent
 	}
 
 	// Special case for plus rune decoding
 	if s[len(s)-1:] == "+" {
 		key = tcell.KeyRune
-		ch = '+'
+		str = "+"
 
 		if len(s) == 1 {
-			return mod, key, ch, nil
+			return mod, key, str, nil
 		} else if len(s) == 2 {
-			return 0, 0, 0, ErrInvalidKeyEvent
+			return 0, 0, "", ErrInvalidKeyEvent
 		} else {
 			s = s[:len(s)-2]
 		}
@@ -118,14 +83,14 @@ DECODEPIECE:
 			continue
 		case "space", "spacebar":
 			key = tcell.KeyRune
-			ch = ' '
+			str = " "
 			continue
 		}
 		for k, keyName := range tcell.KeyNames {
 			if pieceLower == strings.ToLower(strings.ReplaceAll(keyName, "-", "+")) {
 				key = k
 				if key < 0x80 {
-					ch = rune(k)
+					str = string(rune(k))
 				}
 				continue DECODEPIECE
 			}
@@ -133,23 +98,23 @@ DECODEPIECE:
 
 		// Decode rune
 		if len(piece) > 1 {
-			return 0, 0, 0, ErrInvalidKeyEvent
+			return 0, 0, "", ErrInvalidKeyEvent
 		}
 
 		key = tcell.KeyRune
-		ch = rune(piece[0])
+		str = string(rune(piece[0]))
 	}
 
 	// Normalize Ctrl+A-Z to lowercase
 	if mod&tcell.ModCtrl != 0 && key == tcell.KeyRune {
-		ch = unicode.ToLower(ch)
+		str = strings.ToLower(str)
 	}
 
-	return mod, key, ch, nil
+	return mod, key, str, nil
 }
 
 // Encode encodes a key or combination of keys a string.
-func Encode(mod tcell.ModMask, key tcell.Key, ch rune) (string, error) {
+func Encode(mod tcell.ModMask, key tcell.Key, str string) (string, error) {
 	var b strings.Builder
 	var wrote bool
 
@@ -157,25 +122,20 @@ func Encode(mod tcell.ModMask, key tcell.Key, ch rune) (string, error) {
 		if key == tcell.KeyBackspace || key == tcell.KeyTab || key == tcell.KeyEnter {
 			mod ^= tcell.ModCtrl
 		} else {
+			// Convert KeyCtrlA-Z to rune format.
 			if key >= tcell.KeyCtrlA && key <= tcell.KeyCtrlZ {
 				mod |= tcell.ModCtrl
-				ch = rune('a' + (key - tcell.KeyCtrlA))
+				str = string(rune('a' + (key - tcell.KeyCtrlA)))
 				key = tcell.KeyRune
-			}
-			for _, ctrlKey := range ctrlKeys {
-				if key == ctrlKey {
-					mod ^= tcell.ModCtrl
-					break
-				}
 			}
 		}
 	}
 
 	if key != tcell.KeyRune {
-		if UnifyEnterKeys && key == ctrlKeys['j'] {
+		if UnifyEnterKeys && key == tcell.KeyCtrlJ {
 			key = tcell.KeyEnter
 		} else if key < 0x80 {
-			ch = rune(key)
+			str = string(rune(key))
 		}
 	}
 
@@ -206,7 +166,7 @@ func Encode(mod tcell.ModMask, key tcell.Key, ch rune) (string, error) {
 		wrote = true
 	}
 
-	if key == tcell.KeyRune && ch == ' ' {
+	if key == tcell.KeyRune && str == " " {
 		if wrote {
 			b.WriteRune('+')
 		}
@@ -232,7 +192,7 @@ func Encode(mod tcell.ModMask, key tcell.Key, ch rune) (string, error) {
 		if wrote {
 			b.WriteRune('+')
 		}
-		b.WriteRune(ch)
+		b.WriteString(str)
 	}
 
 	return b.String(), nil

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gdamore/tcell/v2"
 	"codeberg.org/tslocum/cbind"
+	"github.com/gdamore/tcell/v3"
 )
 
 func main() {
@@ -37,8 +37,7 @@ func main() {
 	s.Clear()
 
 	go func() {
-		for {
-			ev := s.PollEvent()
+		for ev := range s.EventQ() {
 			switch ev := ev.(type) {
 			case *tcell.EventResize:
 				s.Sync()
@@ -48,9 +47,9 @@ func main() {
 					Background(tcell.ColorBlack))
 				s.Clear()
 
-				putln(s, 0, fmt.Sprintf("Event: %d %d %d", ev.Modifiers(), ev.Key(), ev.Rune()))
+				putln(s, 0, fmt.Sprintf("Event: %d %d %s", ev.Modifiers(), ev.Key(), ev.Str()))
 
-				str, err := cbind.Encode(ev.Modifiers(), ev.Key(), ev.Rune())
+				str, err := cbind.Encode(ev.Modifiers(), ev.Key(), ev.Str())
 				if err != nil {
 					str = fmt.Sprintf("error: %s", err)
 				}
@@ -60,7 +59,7 @@ func main() {
 				if err != nil {
 					putln(s, 4, err.Error())
 				} else {
-					putln(s, 4, fmt.Sprintf("Re-encoded as: %d %d %d", mod, key, ch))
+					putln(s, 4, fmt.Sprintf("Re-encoded as: %d %d %s", mod, key, ch))
 				}
 
 				configuration.Capture(ev)

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 const pressTimes = 7
@@ -48,9 +48,9 @@ func TestConfiguration(t *testing.T) {
 		for i, c := range testCases {
 			i, c := i, c // Capture
 			go func() {
-				ev := config.Capture(tcell.NewEventKey(c.key, c.ch, c.mod))
+				ev := config.Capture(tcell.NewEventKey(c.key, c.str, c.mod))
 				if ev != nil {
-					errs <- fmt.Errorf("failed to test capturing keybinds: failed to register case %d event %d %d %d", i, c.mod, c.key, c.ch)
+					errs <- fmt.Errorf("failed to test capturing keybinds: failed to register case %d event %d %d %s", i, c.mod, c.key, c.str)
 				}
 			}()
 		}

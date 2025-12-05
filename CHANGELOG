@@ -1,3 +1,6 @@
+0.1.8:
+- Upgrade to tcell/v3
+
 0.1.7:
 - Handle Ctrl+[Rune] input events as rune presses instead of KeyCtrl[Rune]
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 type eventHandler func(ev *tcell.EventKey) *tcell.EventKey
@@ -27,13 +27,13 @@ func NewConfiguration() *Configuration {
 
 // Set sets the handler for a key event string.
 func (c *Configuration) Set(s string, handler func(ev *tcell.EventKey) *tcell.EventKey) error {
-	mod, key, ch, err := Decode(s)
+	mod, key, str, err := Decode(s)
 	if err != nil {
 		return err
 	}
 
 	if key == tcell.KeyRune {
-		c.SetRune(mod, ch, handler)
+		c.SetRune(mod, []rune(str)[0], handler)
 	} else {
 		c.SetKey(mod, key, handler)
 	}
@@ -45,6 +45,15 @@ func (c *Configuration) SetKey(mod tcell.ModMask, key tcell.Key, handler func(ev
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
+	// Convert KeyCtrlA-Z to rune format.
+	if key >= tcell.KeyCtrlA && key <= tcell.KeyCtrlZ {
+		mod |= tcell.ModCtrl
+		r := 'a' + (key - tcell.KeyCtrlA)
+		c.handlers[fmt.Sprintf("%d:%d", mod, r)] = handler
+		return
+	}
+
+	// Convert Shift+Tab to Backtab.
 	if mod&tcell.ModShift != 0 && key == tcell.KeyTab {
 		mod ^= tcell.ModShift
 		key = tcell.KeyBacktab
@@ -83,22 +92,20 @@ func (c *Configuration) Capture(ev *tcell.EventKey) *tcell.EventKey {
 
 	mod := ev.Modifiers()
 	key := ev.Key()
-	ch := ev.Rune()
+	str := ev.Str()
 
-	if key != tcell.KeyRune && key != tcell.KeyBackspace && key != tcell.KeyTab && key != tcell.KeyEnter && key != tcell.KeyEscape {
-		// Convert KeyCtrlA-Z to rune format, but skip special keys first
-		if key >= tcell.KeyCtrlA && key <= tcell.KeyCtrlZ {
-			mod |= tcell.ModCtrl
-			ch = rune('a' + (key - tcell.KeyCtrlA))
-			key = tcell.KeyRune
-		}
+	// Convert KeyCtrlA-Z to rune format.
+	if key >= tcell.KeyCtrlA && key <= tcell.KeyCtrlZ {
+		mod |= tcell.ModCtrl
+		str = string(rune('a' + (key - tcell.KeyCtrlA)))
+		key = tcell.KeyRune
 	}
 
 	var keyName string
 	if key != tcell.KeyRune {
 		keyName = fmt.Sprintf("%d-%d", mod, key)
 	} else {
-		keyName = fmt.Sprintf("%d:%d", mod, ch)
+		keyName = fmt.Sprintf("%d:%d", mod, []rune(str)[0])
 	}
 
 	handler := c.handlers[keyName]
