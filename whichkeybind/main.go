@@ -3,10 +3,51 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"codeberg.org/tslocum/cbind"
 	"github.com/gdamore/tcell/v3"
 )
+
+func printInfo(mod tcell.ModMask, key tcell.Key, str string) string {
+	modLabel := "ModNone"
+	if mod != 0 {
+		var m []string
+		if mod&tcell.ModShift != 0 {
+			m = append(m, "ModShift")
+		}
+		if mod&tcell.ModAlt != 0 {
+			m = append(m, "ModAlt")
+		}
+		if mod&tcell.ModMeta != 0 {
+			m = append(m, "ModMeta")
+		}
+		if mod&tcell.ModCtrl != 0 {
+			m = append(m, "ModCtrl")
+		}
+		if mod&tcell.ModHyper != 0 {
+			m = append(m, "ModHyper")
+		}
+		modLabel = strings.Join(m, "+")
+	}
+	var keyLabel string
+	keyName := tcell.KeyNames[key]
+	if keyName != "" {
+		keyLabel = "Key" + keyName
+	} else {
+		switch key {
+		case tcell.KeyRune:
+			keyLabel = "KeyRune"
+		default:
+			keyLabel = "Unknown"
+		}
+	}
+	var strLabel string
+	if str != "" {
+		strLabel = ", str '" + str + "'"
+	}
+	return fmt.Sprintf("mod %d (%s), key %d (%s)%s", mod, modLabel, key, keyLabel, strLabel)
+}
 
 func main() {
 	tcell.SetEncodingFallback(tcell.EncodingFallbackASCII)
@@ -51,27 +92,19 @@ func main() {
 					Background(tcell.ColorBlack))
 				s.Clear()
 
-				var strLabel string
-				if ev.Str() != "" {
-					strLabel = " str '" + ev.Str() + "'"
-				}
-				putln(s, 0, fmt.Sprintf("Decoded as mod %d key %d%s", ev.Modifiers(), ev.Key(), strLabel))
+				putln(s, 0, fmt.Sprintf("Decoded as %s", printInfo(ev.Modifiers(), ev.Key(), ev.Str())))
 
 				str, err := cbind.Encode(ev.Modifiers(), ev.Key(), ev.Str())
 				if err != nil {
 					str = fmt.Sprintf("error: %s", err)
 				}
-				putln(s, 2, "Labeled as "+str)
+				putln(s, 2, "Labeled as '"+str+"'")
 
 				mod, key, str, err := cbind.Decode(str)
 				if err != nil {
 					putln(s, 4, err.Error())
 				} else {
-					var strLabel string
-					if str != "" {
-						strLabel = " str '" + str + "'"
-					}
-					putln(s, 4, fmt.Sprintf("Encoded as mod %d key %d%s", mod, key, strLabel))
+					putln(s, 4, fmt.Sprintf("Encoded as %s", printInfo(mod, key, str)))
 				}
 
 				configuration.Capture(ev)
