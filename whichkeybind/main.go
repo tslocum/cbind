@@ -51,19 +51,27 @@ func main() {
 					Background(tcell.ColorBlack))
 				s.Clear()
 
-				putln(s, 0, fmt.Sprintf("Event: %d %d %s", ev.Modifiers(), ev.Key(), ev.Str()))
+				var strLabel string
+				if ev.Str() != "" {
+					strLabel = " str '" + ev.Str() + "'"
+				}
+				putln(s, 0, fmt.Sprintf("Decoded as mod %d key %d%s", ev.Modifiers(), ev.Key(), strLabel))
 
 				str, err := cbind.Encode(ev.Modifiers(), ev.Key(), ev.Str())
 				if err != nil {
 					str = fmt.Sprintf("error: %s", err)
 				}
-				putln(s, 2, str)
+				putln(s, 2, "Labeled as "+str)
 
-				mod, key, ch, err := cbind.Decode(str)
+				mod, key, str, err := cbind.Decode(str)
 				if err != nil {
 					putln(s, 4, err.Error())
 				} else {
-					putln(s, 4, fmt.Sprintf("Re-encoded as: %d %d %s", mod, key, ch))
+					var strLabel string
+					if str != "" {
+						strLabel = " str '" + str + "'"
+					}
+					putln(s, 4, fmt.Sprintf("Encoded as mod %d key %d%s", mod, key, strLabel))
 				}
 
 				configuration.Capture(ev)
