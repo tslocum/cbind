@@ -36,6 +36,10 @@ func main() {
 		Background(tcell.ColorBlack))
 	s.Clear()
 
+	putln(s, 0, "No key press events have been detected yet.")
+	putln(s, 2, "Press a key.")
+	putln(s, 4, "Key event info will then be displayed here.")
+
 	go func() {
 		for ev := range s.EventQ() {
 			switch ev := ev.(type) {
